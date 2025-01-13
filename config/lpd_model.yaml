@@ -1,0 +1,6 @@
+
+muli_level_loss_paramter:
+reconstruction_loss_parameter:
+adversal_loss_paramter:
+
+gan_loss_type: hinge
