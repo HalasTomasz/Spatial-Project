@@ -1,4 +1,37 @@
+data_root: /home/halas/Spatial Project/Spatial-Project/dataset/img
+mask_root: /home/halas/Spatial Project/Spatial-Project/dataset/mask
 
+type: "train"
+batchSize: 1
+loadSize: 256
+fineSize: 256
+input_nc: 3
+output_nc: 3
+ngf: 64
+ndf: 64
+dataset_mode: "aligned"
+nThreads: 8
+checkpoints_dir: "./weights"
+norm: "instance"
+suffix: ""
+max_dataset_size: infinity
+resize_or_crop: "resize_and_crop"
+no_flip: false
+init_type: "normal"
+mask_type: "center"
+mask_sub_type: "rect"
+lambda_A: 100
+overlap: 4
+init_gain: 0.02
+skip: 0
+fuse: 0
+gan_type: "vanilla"
+gan_weight: 0.2
+style_weight: 10.0
+content_weight: 1.0
+discounting: 1
+use_spectral_norm_D: 1
+use_spectral_norm_G: 0
 
 input_nc
 ndf
