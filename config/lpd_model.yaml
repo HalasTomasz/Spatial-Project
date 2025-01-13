@@ -1,4 +1,13 @@
 
+
+input_nc
+ndf
+device
+
+LBP:
+  ngf: 64
+  use_spectral_norm: False
+
 muli_level_loss_paramter:
 reconstruction_loss_parameter:
 adversal_loss_paramter:

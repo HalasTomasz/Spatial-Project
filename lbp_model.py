@@ -41,10 +41,8 @@ class DeconvBlock(nn.Module):
         return self.block(x)
 
 class LBPGenerator(nn.Module):
-    def __init__(self):
+    def __init__(self, ngf=64, use_spectral_norm=False):
         super(LBPGenerator, self).__init__()
-        ngf = 64
-        use_spectral_norm = False
 
         # Downsampling layers
         self.down_blocks = nn.ModuleList([
