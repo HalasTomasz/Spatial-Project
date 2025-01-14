@@ -5,6 +5,7 @@ import random
 import argparse
 import torch
 import torch.nn.functional as F
+import torch.nn as nn
 import numpy as np
 import tensorflow as tf
 import torch.utils.data

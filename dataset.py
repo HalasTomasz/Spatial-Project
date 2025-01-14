@@ -1,9 +1,17 @@
+import os
+import cv2
+from torch.utils.data import Dataset
+from torchvision import transforms
+from PIL import Image
+import numpy as np
+import random
+import copy
 
 class MyDataset(Dataset):
     def __init__(self, opt):
         self.opt = opt
         self.img_flist = sorted(os.listdir(opt.data_root))
-        self.mask_flist = sorted(os.listdir(opt.mask_root))
+        self.mask_flist = sorted(os.listdir(opt.mask_root.global_mask))
 
         # Define image transformations
         self.transform = transforms.Compose([
@@ -23,12 +31,25 @@ class MyDataset(Dataset):
         orginal_img = self.transform(orginal_img)
         binary_lbp_mask = lbp_mask[0, :, :].unsqueeze(0)  # Shape: (1, H, W)
 
-        # Load and process mask
-        mask_path = os.path.join(self.opt.mask_root, self.mask_flist[index])
+       
+        mask_path = os.path.join(self.opt.mask_root.global_mask, self.mask_flist[index])
         mask = Image.open(mask_path)
-        mask = transforms.ToTensor()(mask)
+        mask_global = transforms.ToTensor()(mask)
 
-        return {'img': orginal_img, 'mask': mask, 'lbp_mask': binary_lbp_mask 'pic_name': fname}
+        mask_path = os.path.join(self.opt.mask_root.random_sqaure_mask, self.mask_flist[index])
+        mask = Image.open(mask_path)
+        mask_sqaure = transforms.ToTensor()(mask)
+
+        mask_path = os.path.join(self.opt.mask_root.random_walk_mask, self.mask_flist[index])
+        mask = Image.open(mask_path)
+        mask_walk = transforms.ToTensor()(mask)
+        
+        return {'img': orginal_img, 
+                'mask_global': mask_global, 
+                'mask_sqaure': mask_sqaure, 
+                'mask_walk': mask_walk, 
+                'lbp_mask': binary_lbp_mask, 
+                'pic_name': fname}
 
     def __len__(self):
         return len(self.img_flist)

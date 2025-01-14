@@ -169,3 +169,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+dataset/img/*
+dataset/mask/global_mask/*
+dataset/mask/random_sqaure_mask/*
+dataset/mask/random_walk_mask/*
+

@@ -3,8 +3,6 @@ import torch.nn as nn
 import pytorch_lightning as pl
 from torch.nn.utils import spectral_norm
 
-self.optimizer_LBP = torch.optim.Adam(self.netLBP.parameters(), lr=opt.lr, betas=(0.5, 0.999))
-self.optimizer_D2 = torch.optim.Adam(self.netD2.parameters(), lr=opt.lr, betas=(0.5, 0.999))
 
 class ConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=4, stride=2, padding=1, use_spectral_norm=False, norm_layer=nn.InstanceNorm2d, activation=nn.LeakyReLU(0.2, True)):

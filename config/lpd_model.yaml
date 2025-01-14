@@ -1,8 +1,11 @@
 data_root: /home/halas/Spatial Project/Spatial-Project/dataset/img
-mask_root: /home/halas/Spatial Project/Spatial-Project/dataset/mask
+mask_root: 
+  global_mask: /home/halas/Spatial Project/Spatial-Project/dataset/mask/global_mask
+  random_sqaure_mask: /home/halas/Spatial Project/Spatial-Project/dataset/mask/random_sqaure_mask
+  random_walk_mask: /home/halas/Spatial Project/Spatial-Project/dataset/mask/random_walk_mask
 
 type: "train"
-batchSize: 1
+batch_size: 1
 loadSize: 256
 fineSize: 256
 input_nc: 3
@@ -10,7 +13,7 @@ output_nc: 3
 ngf: 64
 ndf: 64
 dataset_mode: "aligned"
-nThreads: 8
+num_workers: 8
 checkpoints_dir: "./weights"
 norm: "instance"
 suffix: ""
@@ -33,16 +36,16 @@ discounting: 1
 use_spectral_norm_D: 1
 use_spectral_norm_G: 0
 
-input_nc
-ndf
-device
+# input_nc
+# ndf
+# device
 
 LBP:
   ngf: 64
   use_spectral_norm: False
 
-muli_level_loss_paramter:
-reconstruction_loss_parameter:
-adversal_loss_paramter:
+muli_level_loss_paramter: a
+reconstruction_loss_parameter: a
+adversal_loss_paramter: a
 
 gan_loss_type: hinge

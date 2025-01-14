@@ -1,3 +1,4 @@
+import torch.nn as nn
 
 class ImageGenerator(nn.Module):
     def __init__(self, nfg, use_spectral_norm, device):
@@ -26,7 +27,7 @@ class ImageGenerator(nn.Module):
         self.up_blocks = nn.ModuleList([
             self._create_up_block(in_channels, out_channels)
             for in_channels, out_channels in zip([self.ngf * 8 * 2, self.ngf * 8 * 2, self.ngf * 8 * 2, self.ngf * 8 * 2, self.ngf * 4 * 3, self.ngf * 4 , self.ngf *2],
-                                                 [self.ngf * 8, self.ngf * 8, self.ngf * 8, self.ngf * 4, self.nfg * 2 , self.ngf *, 3])
+                                                 [self.ngf * 8, self.ngf * 8, self.ngf * 8, self.ngf * 4, self.nfg * 2 , self.ngf, 3])
         ])
 
         # Custom attention mechanism

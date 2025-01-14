@@ -1,7 +1,8 @@
+import torch.nn as nn
 
 class GanLoss(nn.Module):
 
-    def __init__(self, loss_type='lsgan', target_real_label=1.0, target_fake_label=0.0)):
+    def __init__(self, loss_type='lsgan', target_real_label=1.0, target_fake_label=0.0):
         super(GanLoss, self).__init__()
 
         self.loss_type = loss_type
