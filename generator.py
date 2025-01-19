@@ -1,4 +1,7 @@
 import torch.nn as nn
+from torch.nn.utils import spectral_norm
+from attention import MyAttention 
+import torch
 
 class ImageGenerator(nn.Module):
     def __init__(self, nfg, use_spectral_norm, device):
@@ -17,9 +20,9 @@ class ImageGenerator(nn.Module):
         # Bottleneck layer
         self.bottleneck = nn.Sequential(
             nn.LeakyReLU(0.2, True),
-            spectral_norm(nn.Conv2d(self.ngf * 8, self.ngf * 8, kernel_size=4, stride=2, padding=1), self.use_spectral_norm),
+            spectral_norm(nn.Conv2d(self.ngf * 8, self.ngf * 8, kernel_size=4, stride=2, padding=1)),
             nn.ReLU(True),
-            spectral_norm(nn.ConvTranspose2d(self.ngf * 8, self.ngf * 8, kernel_size=4, stride=2, padding=1), self.use_spectral_norm),
+            spectral_norm(nn.ConvTranspose2d(self.ngf * 8, self.ngf * 8, kernel_size=4, stride=2, padding=1)),
             nn.InstanceNorm2d(self.ngf * 8),
         )
 
@@ -27,17 +30,17 @@ class ImageGenerator(nn.Module):
         self.up_blocks = nn.ModuleList([
             self._create_up_block(in_channels, out_channels)
             for in_channels, out_channels in zip([self.ngf * 8 * 2, self.ngf * 8 * 2, self.ngf * 8 * 2, self.ngf * 8 * 2, self.ngf * 4 * 3, self.ngf * 4 , self.ngf *2],
-                                                 [self.ngf * 8, self.ngf * 8, self.ngf * 8, self.ngf * 4, self.nfg * 2 , self.ngf, 3])
+                                                 [self.ngf * 8, self.ngf * 8, self.ngf * 8, self.ngf * 4, self.ngf * 2 , self.ngf, 3])
         ])
 
         # Custom attention mechanism
-        self.attention = MyAttention(opt)
+        self.attention = MyAttention(device)
 
     def _create_down_block(self, in_channels, out_channels):
         """Creates a downsampling block."""
         return nn.Sequential(
             nn.LeakyReLU(0.2, True),
-            spectral_norm(nn.Conv2d(in_channels, out_channels, kernel_size=4, stride=2, padding=1), self.use_spectral_norm),
+            spectral_norm(nn.Conv2d(in_channels, out_channels, kernel_size=4, stride=2, padding=1)),
             nn.InstanceNorm2d(out_channels)
         )
 
@@ -45,7 +48,7 @@ class ImageGenerator(nn.Module):
         """Creates an upsampling block."""
         layers = [
             nn.ReLU(True),
-            spectral_norm(nn.ConvTranspose2d(in_channels, out_channels, kernel_size=4, stride=2, padding=1), self.use_spectral_norm),
+            spectral_norm(nn.ConvTranspose2d(in_channels, out_channels, kernel_size=4, stride=2, padding=1)),
         ]
         if out_channels != 3:
             layers.append(nn.InstanceNorm2d(out_channels))
@@ -63,37 +66,44 @@ class ImageGenerator(nn.Module):
             inputs = down_block(inputs)
             features.append(inputs)
 
+
         # Bottleneck
-        bottleneck_output = self.bottleneck(features[-1])
+        bottleneck_output = self.bottleneck(inputs)
 
         # Upsampling
         up_input = bottleneck_output
         list_index = 0
 
-        for idx, up_block in enumerate(self.up_blocks[:-1]):
-
+        for idx, up_block in enumerate(self.up_blocks):
             if idx == 4:
-                skip_connection = features[-(idx + 1)]
+                
+                skip_connection = features[-(list_index + 1)]
                 up_input = torch.cat([up_input, skip_connection], dim=1)
                 up_input = nn.ReLU(inplace=True)(up_input)
+                tmp_outputs = []
+
+                for batch in range(up_input.size(0)):
+                    # Add batch dimension
+                    input_reshaped = up_input[batch, :256, :, :].unsqueeze(0)
+                    input_reshaped_2 = up_input[batch, 256:, :, :].unsqueeze(0)
+                    mask_tmp = mask[batch].unsqueeze(0)
+                    tmp_output = self.attention(input_reshaped, input_reshaped_2, mask_tmp)
+                    tmp_outputs.append(tmp_output)
+
+                final_tmp = torch.cat(tmp_outputs, dim=0)
+
+
+                up_input = up_block(final_tmp)
+                list_index +=1
                 
-                attention_input = torch.cat([up_input[:, :256], up_input[:, 256:]], dim=1)
-                up_input = self.attention(attention_input, attention_input, mask)
-
                 continue
-
-            elif idx == 5:
-                up_input = self.up_block(up_input)
-                continue
-
-
 
             skip_connection = features[-(list_index + 1)]
             up_input = torch.cat([up_input, skip_connection], dim=1)
             up_input = up_block(up_input)
             list_index +=1
+        
 
         final_output = up_input + x
-
         # Mask the output
-        return final_output * mask + x * (1 - mask)
+        return final_output * mask + x * (1 - mask), [*self.down_blocks, *self.bottleneck, *self.up_blocks]

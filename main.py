@@ -12,6 +12,11 @@ from mask_generator import MaskGenerator
 import matplotlib.pyplot as plt
 from dataset import MyDataset
 from torch.utils.data import DataLoader, random_split
+from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.loggers import TensorBoardLogger
+from train import TrainModel
+import logging
 
 class DotDict:
     """A dictionary that supports dot notation."""
@@ -24,35 +29,52 @@ class DotDict:
     def __getitem__(self, key):
         return getattr(self, key)
 
-
-def train(dataloader_train, dataloader_val, dataloader_test):
-
-    
-    # Create the discriminators
-    discriminator_LBP = discriminator.define_discriminator(opt.input_nc - 2, opt.ndf, opt.device)
-    discriminator_LBP = init_net(net_LBP, 'normal', 0.02, opt.device)
-
-    discriminator_Gen = discriminator.define_discriminator(opt.input_nc, opt.ndf, opt.device)
-    discriminator_Gen = init_net(net_Gen, 'normal', 0.02, opt.device)
-
-    # Create the GAN loss
-    gan_loss = losses.GanLoss(opt.gan_loss_type, target_real_label=1.0, target_fake_label=0.0)
-
-    # Create the generators 
-    generator_lpd = lbp_model.LBPGenerator(opt.LBP.ngf, opt.LBP.use_spectral_norm).to(opt.device)
-    generator_gen = generator.ImageGenerator(opt.GEN.ngf, opt.GEN.use_spectral_norm, opt.device).to(opt.device)
-
-    ## Here TO DO 
-    # create the optimizers for the generators and discriminators
-    # lighting training
-    # loss calculation
-    # optimizer calculation
-    # save the model chaec
-    # make val 
-    # make test
-    # uplaod to compute
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('trainer_logger')
 
 
+def train(dataloader_train, dataloader_val, dataloader_test, opt):
+    """
+    Train the TrainModel with given dataloaders.
+
+    Args:
+        dataloader_train (DataLoader): Training dataloader.
+        dataloader_val (DataLoader): Validation dataloader.
+        dataloader_test (DataLoader): Test dataloader.
+        opt (Namespace): Configuration options for the model.
+
+    Returns:
+        None
+    """
+
+    # Initialize the model
+    model = TrainModel(opt)
+
+    # Callbacks
+    checkpoint_callback = ModelCheckpoint(
+        monitor='loss_G',  # Monitors generator loss for saving the best model
+        dirpath='checkpoints/',
+        filename='best-checkpoint-{epoch:02d}-{loss_G:.4f}',
+        save_top_k=1,
+        mode='min'
+    )
+
+    logger.info("Starting the training")
+
+    # Trainer
+    trainer = Trainer(
+        max_epochs=opt.epochs,
+        devices=1 if torch.cuda.is_available() else 0,
+        accelerator="gpu" if torch.cuda.is_available() else None,  #
+        callbacks=[checkpoint_callback],
+    )
+
+    # Train the model
+    trainer.fit(model, train_dataloaders=dataloader_train, val_dataloaders=dataloader_val)
+
+    # Test the model (optional)
+    if dataloader_test:
+        trainer.test(model, dataloaders=dataloader_test)
     
 def prepare_data():
 
@@ -105,14 +127,17 @@ def prepare_data():
         dataloader_val = DataLoader(val_subset, batch_size=opt.batch_size, shuffle=False, num_workers=opt.num_workers)
         dataloader_test = DataLoader(test_subset, batch_size=opt.batch_size, shuffle=False, num_workers=opt.num_workers)
 
-        return dataloader_train, dataloader_val, dataloader_test
+        return dataloader_train, dataloader_val, dataloader_test, opt
     else:
         raise FileNotFoundError("Data or mask directory not found.")
 
     
 def main():
-    dataloader_train, dataloader_val, dataloader_test = prepare_data()
-    train(dataloader_train, dataloader_val, dataloader_test)
+    logger.info("Starting")
+    dataloader_train, dataloader_val, dataloader_test, opt = prepare_data()
+    logger.info("Data Loaded")
+
+    train(dataloader_train, dataloader_val, dataloader_test, opt)
 
 if __name__ == "__main__":
     main()

@@ -32,6 +32,13 @@ def init_net(net, init_type='normal', gain=0.02, device='cpu'):
     net.apply(lambda m: initialize_weights(m, init_type, gain))
     return net.to(device)
 
+def gram_matrix(feat):
+    (batch, ch, h, w) = feat.size()
+    feat = feat.view(batch, ch, h*w)
+    feat_t = feat.transpose(1, 2)
+    gram = torch.bmm(feat, feat_t) / (ch * h * w)
+    return gram
+
 
 ### VGG Feature Extractor ####
 

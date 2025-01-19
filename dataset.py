@@ -24,31 +24,35 @@ class MyDataset(Dataset):
         img_path = os.path.join(self.opt.data_root, fname)
 
         # Load and process image
-        orginal_img = cv2.imread(img_path)
-        lbp_mask = self._load_lbp(copy.deepcopy(orginal_img))
+        original_img = cv2.imread(img_path)
+        original_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2RGB)
+        lbp_mask = self._load_lbp(copy.deepcopy(original_img))
+        lbp_mask = transforms.ToTensor()(lbp_mask)
 
         # Apply transformations
-        orginal_img = self.transform(orginal_img)
-        binary_lbp_mask = lbp_mask[0, :, :].unsqueeze(0)  # Shape: (1, H, W)
+        original_img = self.transform(original_img)
 
        
         mask_path = os.path.join(self.opt.mask_root.global_mask, self.mask_flist[index])
-        mask = Image.open(mask_path)
+        mask = Image.open(mask_path).convert('L')
         mask_global = transforms.ToTensor()(mask)
 
         mask_path = os.path.join(self.opt.mask_root.random_sqaure_mask, self.mask_flist[index])
-        mask = Image.open(mask_path)
-        mask_sqaure = transforms.ToTensor()(mask)
+        mask = Image.open(mask_path).convert('L')
+        mask_square = transforms.ToTensor()(mask)
 
         mask_path = os.path.join(self.opt.mask_root.random_walk_mask, self.mask_flist[index])
-        mask = Image.open(mask_path)
+        mask = Image.open(mask_path).convert('L')
+        mask = np.array(mask)
+        mask = 255 - mask
         mask_walk = transforms.ToTensor()(mask)
         
-        return {'img': orginal_img, 
-                'mask_global': mask_global, 
-                'mask_sqaure': mask_sqaure, 
-                'mask_walk': mask_walk, 
-                'lbp_mask': binary_lbp_mask, 
+        mask_choices = [mask_global, mask_square, mask_walk]
+        selected_mask = random.choice(mask_choices)
+
+        return {'img': original_img, 
+                'mask': selected_mask, 
+                'lbp_mask': lbp_mask, 
                 'pic_name': fname}
 
     def __len__(self):

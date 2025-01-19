@@ -53,15 +53,26 @@ class LBPGenerator(nn.Module):
             ConvBlock(ngf * 8, ngf * 8, use_spectral_norm=use_spectral_norm),
         ])
 
-        # Bottleneck
-        self.bottleneck = nn.Sequential(
-            nn.LeakyReLU(0.2, True),
-            spectral_norm(nn.Conv2d(ngf * 8, ngf * 8, kernel_size=4, stride=2, padding=1), use_spectral_norm),
-            nn.ReLU(True),
-            spectral_norm(nn.ConvTranspose2d(ngf * 8, ngf * 8, kernel_size=4, stride=2, padding=1), use_spectral_norm),
-            nn.InstanceNorm2d(ngf * 8),
-        )
 
+        layers = [
+            nn.LeakyReLU(0.2, True)
+        ]
+
+        # Conditionally add spectral normalization
+        if use_spectral_norm:
+            layers.append(spectral_norm(nn.Conv2d(ngf * 8, ngf * 8, kernel_size=4, stride=2, padding=2)))
+            layers.append(nn.ReLU(True))
+            layers.append(spectral_norm(nn.Conv2d(ngf * 8, ngf * 8, kernel_size=4, stride=2, padding=2)))
+            layers.append(nn.InstanceNorm2d(ngf * 8))
+
+        else:
+            layers.append(nn.Conv2d(ngf * 8, ngf * 8, kernel_size=4, stride=2, padding=2))
+            layers.append(nn.ReLU(True))
+            layers.append(nn.Conv2d(ngf * 8, ngf * 8, kernel_size=4, stride=2, padding=2))
+            layers.append(nn.InstanceNorm2d(ngf * 8))
+
+
+        self.bottleneck = nn.Sequential(*layers)
         # Upsampling layers
         self.up_blocks = nn.ModuleList([
             DeconvBlock(ngf * 8 * 2, ngf * 8, use_spectral_norm=use_spectral_norm),
@@ -73,9 +84,12 @@ class LBPGenerator(nn.Module):
             DeconvBlock(ngf * 1 * 2, 1, use_spectral_norm=use_spectral_norm, norm_layer=None, activation=nn.Tanh()),
         ])
 
-    def forward(self, x):
+    def forward(self, x, mask):
         skip_connections = []
+        end = x.clone()
 
+        x = torch.cat([x, 1 - mask], 1)
+                      
         # Downsampling
         for down_block in self.down_blocks:
             x = down_block(x)
@@ -89,6 +103,9 @@ class LBPGenerator(nn.Module):
             if i < len(skip_connections):
                 skip = skip_connections[-(i + 1)]
                 x = torch.cat((x, skip), dim=1)
+            
             x = up_block(x)
 
+        x = x + end
+        x = x * mask + end * (1 - mask)
         return x

@@ -170,7 +170,7 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-lighting_logs
+lightning_logs/
 checkpoints/*
 dataset/img/*
 dataset/mask/global_mask/*
