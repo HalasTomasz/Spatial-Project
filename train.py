@@ -142,9 +142,6 @@ class TrainModel(pl.LightningModule):
             images = normalized_images.cpu()
             masks = masks.cpu()
             generated = normalized_generated.cpu()
-            plt.imshow(images[0].permute(1, 2, 0).numpy())
-            plt.show()
-            print(images.size(), masks.size(), generated.size())
 
             # Convert mask to 3 channels for visualization
             masks_3ch = masks.repeat(1, 3, 1, 1)  # [B, 1, H, W] -> [B, 3, H, W]
