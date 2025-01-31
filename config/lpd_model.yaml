@@ -1,22 +1,22 @@
-data_root: /home/halas/Spatial Project/Spatial-Project/dataset/img
+data_root: /net/pr2/projects/plgrid/plggthyroid/przestrzenne/TMP_DANE
 mask_root: 
-  global_mask: /home/halas/Spatial Project/Spatial-Project/dataset/mask/global_mask
-  random_sqaure_mask: /home/halas/Spatial Project/Spatial-Project/dataset/mask/random_sqaure_mask
-  random_walk_mask: /home/halas/Spatial Project/Spatial-Project/dataset/mask/random_walk_mask
+  global_mask: /net/pr2/projects/plgrid/plggthyroid/przestrzenne/MASK/global_mask
+  random_sqaure_mask: /net/pr2/projects/plgrid/plggthyroid/przestrzenne/MASK/random_sqaure_mask
+  random_walk_mask: /net/pr2/projects/plgrid/plggthyroid/przestrzenne/MASK/random_walk_mask
 
 device: "cuda"
-batch_size: 4
-num_workers: 1
-epochs: 1
+batch_size: 64
+num_workers: 12
+epochs: 100
 input_nc: 3
 ndf: 64
 ngf: 64
 lr: 0.0002
 gan_type: "lsgan"
 gan_weight: 1.0
-lambda_A: 10.0
-style_weight: 10.0
-content_weight: 1.0
+lambda_A: 2.0
+style_weight: 2.0
+content_weight: 3.0
 LBP:
   ngf: 64
   use_spectral_norm: true

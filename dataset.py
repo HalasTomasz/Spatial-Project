@@ -11,7 +11,8 @@ class MyDataset(Dataset):
     def __init__(self, opt):
         self.opt = opt
         self.img_flist = sorted(os.listdir(opt.data_root))
-        self.mask_flist = sorted(os.listdir(opt.mask_root.global_mask))
+
+        print(len(self.img_flist))
 
         # Define image transformations
         self.transform = transforms.Compose([
@@ -33,21 +34,35 @@ class MyDataset(Dataset):
         original_img = self.transform(original_img)
 
        
-        mask_path = os.path.join(self.opt.mask_root.global_mask, self.mask_flist[index])
-        mask = Image.open(mask_path).convert('L')
-        mask_global = transforms.ToTensor()(mask)
-
-        mask_path = os.path.join(self.opt.mask_root.random_sqaure_mask, self.mask_flist[index])
-        mask = Image.open(mask_path).convert('L')
-        mask_square = transforms.ToTensor()(mask)
-
-        mask_path = os.path.join(self.opt.mask_root.random_walk_mask, self.mask_flist[index])
-        mask = Image.open(mask_path).convert('L')
-        mask = np.array(mask)
-        mask = 255 - mask
-        mask_walk = transforms.ToTensor()(mask)
+        mask_path = os.path.join(self.opt.mask_root.global_mask, fname)
+        if os.path.exists(mask_path):
+            mask = Image.open(mask_path).convert('L')
+            mask_global = transforms.ToTensor()(mask)
         
-        mask_choices = [mask_global, mask_square, mask_walk]
+        else:
+            mask_global = None
+
+        mask_path = os.path.join(self.opt.mask_root.random_sqaure_mask, fname)
+        if os.path.exists(mask_path):
+            mask = Image.open(mask_path).convert('L')
+            mask_square = transforms.ToTensor()(mask)
+        
+        else:
+            mask_square = None
+        
+        mask_path = os.path.join(self.opt.mask_root.random_walk_mask, fname)
+        if os.path.exists(mask_path):
+            mask = Image.open(mask_path).convert('L')
+            mask = np.array(mask)
+            mask = 255 - mask
+            mask_walk = transforms.ToTensor()(mask)
+        else:
+            mask_walk = None
+
+        mask_global = mask_global if mask_global is not None and mask_global.numel() > 0 else None
+        mask_square = mask_square if mask_square is not None and mask_square.numel() > 0 else None
+        mask_walk = mask_walk if mask_walk is not None and mask_walk.numel() > 0 else None
+        mask_choices = [m for m in [mask_global, mask_square, mask_walk] if m is not None]
         selected_mask = random.choice(mask_choices)
 
         return {'img': original_img, 

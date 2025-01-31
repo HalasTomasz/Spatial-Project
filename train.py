@@ -113,9 +113,42 @@ class TrainModel(pl.LightningModule):
         val_loss_D = self.backward_D()
         val_loss_D2 = self.backward_D2()
 
-        self.log("val_loss_G", val_loss_G, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("val_loss_D", val_loss_D, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("val_loss_D2", val_loss_D2, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("val_loss_G", val_loss_G, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log("val_loss_D", val_loss_D, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log("val_loss_D2", val_loss_D2, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
+        batch_length = len(batch['img']) 
+        self.log('batch_length', batch_length) 
+        # images = batch['img']  # Original images
+        # masks = batch['mask']  # Ground truth masks
+        # generated = self.I_o  # The generated images from the model
+
+        # normalized_images = (images / 2) + 0.5  # Undo normalization
+        # normalized_generated = (generated / 2) + 0.5
+        
+        # # Move tensors to CPU
+        # images = normalized_images.cpu()
+        # masks = masks.cpu()
+        # generated = normalized_generated.cpu()
+
+        # # Convert mask to 3 channels for visualization
+        # masks_3ch = masks.repeat(1, 3, 1, 1)  # [B, 1, H, W] -> [B, 3, H, W]
+
+        # # Normalize mask to range [0, 1]
+        # masks_normalized = masks_3ch / masks_3ch.max()
+
+        # # Overlay mask on the original image
+        # overlayed_images = images * 0.7 + masks_normalized * 0.3
+
+        # # Concatenate for visualization: Original | Overlayed | Generated
+        # img_grid = torch.cat((images, overlayed_images, generated), dim=0)  # [3*B, 3, H, W]
+        # grid = make_grid(img_grid, nrow=images.size(0))  # nrow = batch size
+
+        # # Plot the grid
+        # plt.figure(figsize=(12, 6))
+        # plt.imshow(grid.permute(1, 2, 0).numpy())
+        # plt.axis('off')
+        # plt.title("Original | Original + Mask | Generated")
+        # plt.savefig(f"/net/pr2/projects/plgrid/plggthyroid/przestrzenne/val/grid_image_{batch_idx}.png", bbox_inches='tight') 
 
     def test_step(self, batch, batch_idx):
         self.forward(batch)
@@ -128,40 +161,38 @@ class TrainModel(pl.LightningModule):
         self.log("test_loss_D", test_loss_D, on_step=False, on_epoch=True, prog_bar=True)
         self.log("test_loss_D2", test_loss_D2, on_step=False, on_epoch=True, prog_bar=True)
 
-        if batch_idx == 0:  # Example: Only plot for the first batch
-
             
-            images = batch['img']  # Original images
-            masks = batch['mask']  # Ground truth masks
-            generated = self.I_o  # The generated images from the model
+        # images = batch['img']  # Original images
+        # masks = batch['mask']  # Ground truth masks
+        # generated = self.I_o  # The generated images from the model
 
-            normalized_images = (images / 2) + 0.5  # Undo normalization
-            normalized_generated = (generated / 2) + 0.5
-            
-            # Move tensors to CPU
-            images = normalized_images.cpu()
-            masks = masks.cpu()
-            generated = normalized_generated.cpu()
+        # normalized_images = (images / 2) + 0.5  # Undo normalization
+        # normalized_generated = (generated / 2) + 0.5
+        
+        # # Move tensors to CPU
+        # images = normalized_images.cpu()
+        # masks = masks.cpu()
+        # generated = normalized_generated.cpu()
 
-            # Convert mask to 3 channels for visualization
-            masks_3ch = masks.repeat(1, 3, 1, 1)  # [B, 1, H, W] -> [B, 3, H, W]
+        # # Convert mask to 3 channels for visualization
+        # masks_3ch = masks.repeat(1, 3, 1, 1)  # [B, 1, H, W] -> [B, 3, H, W]
 
-            # Normalize mask to range [0, 1]
-            masks_normalized = masks_3ch / masks_3ch.max()
+        # # Normalize mask to range [0, 1]
+        # masks_normalized = masks_3ch / masks_3ch.max()
 
-            # Overlay mask on the original image
-            overlayed_images = images * 0.7 + masks_normalized * 0.3
+        # # Overlay mask on the original image
+        # overlayed_images = images * 0.7 + masks_normalized * 0.3
 
-            # Concatenate for visualization: Original | Overlayed | Generated
-            img_grid = torch.cat((images, overlayed_images, generated), dim=0)  # [3*B, 3, H, W]
-            grid = make_grid(img_grid, nrow=images.size(0))  # nrow = batch size
+        # # Concatenate for visualization: Original | Overlayed | Generated
+        # img_grid = torch.cat((images, overlayed_images, generated), dim=0)  # [3*B, 3, H, W]
+        # grid = make_grid(img_grid, nrow=images.size(0))  # nrow = batch size
 
-            # Plot the grid
-            plt.figure(figsize=(12, 6))
-            plt.imshow(grid.permute(1, 2, 0).numpy())
-            plt.axis('off')
-            plt.title("Original | Original + Mask | Generated")
-            plt.show()
+        # # Plot the grid
+        # plt.figure(figsize=(12, 6))
+        # plt.imshow(grid.permute(1, 2, 0).numpy())
+        # plt.axis('off')
+        # plt.title("Original | Original + Mask | Generated")
+        # plt.savefig(f"/net/pr2/projects/plgrid/plggthyroid/przestrzenne/test/grid_image_{batch_idx}.png", bbox_inches='tight') 
 
 
     def backward_G(self):
@@ -196,7 +227,7 @@ class TrainModel(pl.LightningModule):
         # )
 
         loss_G = loss_G_L2 + loss_G_GAN + loss_style + loss_perceptual
-        self.log("loss_G", loss_G)
+        self.log("loss_G", loss_G, on_step=True, sync_dist=True)
         return loss_G
 
     def backward_D(self):
@@ -207,7 +238,7 @@ class TrainModel(pl.LightningModule):
         pred_I_g = self.netD(I_g)
 
         loss_D = (self.criterionGAN(pred_I_o, False) + self.criterionGAN(pred_I_g, True)) * 0.5
-        self.log("loss_D", loss_D)
+        self.log("loss_D", loss_D, on_step=True, sync_dist=True)
         return loss_D
 
     def backward_D2(self):
@@ -218,7 +249,7 @@ class TrainModel(pl.LightningModule):
         pred_L_g = self.netD2(L_g)
 
         loss_D2 = (self.criterionGAN(pred_L_o, False) + self.criterionGAN(pred_L_g, True)) * 0.5
-        self.log("loss_D2", loss_D2)
+        self.log("loss_D2", loss_D2, on_step=True, sync_dist=True)
         return loss_D2
 
     def configure_optimizers(self):

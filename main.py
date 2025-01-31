@@ -64,68 +64,69 @@ def train(dataloader_train, dataloader_val, dataloader_test, opt):
     # Trainer
     trainer = Trainer(
         max_epochs=opt.epochs,
-        devices=1 if torch.cuda.is_available() else 0,
-        accelerator="gpu" if torch.cuda.is_available() else None,  #
+        devices=8,
         callbacks=[checkpoint_callback],
+        accelerator="auto",
+        strategy="ddp",
     )
+    logger.info(f"Train Start")
 
-    # Train the model
     trainer.fit(model, train_dataloaders=dataloader_train, val_dataloaders=dataloader_val)
 
-    # Test the model (optional)
-    if dataloader_test:
-        trainer.test(model, dataloaders=dataloader_test)
+    # if dataloader_test:
+    #     trainer.test(model, dataloaders=dataloader_test)
     
 def prepare_data():
 
     print("Preparing data...")
-    with open('./config/lpd_model.yaml', 'r') as file:
+    with open('/net/pr2/projects/plgrid/plggthyroid/przestrzenne/Spatial-Project/config/lpd_model.yaml', 'r') as file:
         yaml_data = yaml.safe_load(file)
     opt = DotDict(yaml_data)
 
-    if os.path.exists(opt.mask_root.global_mask):
-        mask_generator = MaskGenerator(fine_size=256, overlap=10)
+    ## DONE
+    # if os.path.exists(opt.mask_root.global_mask):
+    #     mask_generator = MaskGenerator(fine_size=256, overlap=10)
         
-        for root, _, files in os.walk(opt.data_root):
-            for file in files:
-                mask = mask_generator.wrapper_gmask()  # Generate the mask
-                mask_path = os.path.join(opt.mask_root.global_mask, file)
-                mask_generator.save_image(mask, mask_path)  
+    #     for root, _, files in os.walk(opt.data_root):
+    #         for file in files:
+    #             mask = mask_generator.wrapper_gmask()  # Generate the mask
+    #             mask_path = os.path.join(opt.mask_root.global_mask, file)
+    #             mask_generator.save_image(mask, mask_path)  
     
-    if os.path.exists(opt.mask_root.random_sqaure_mask):
-        mask_generator = MaskGenerator(fine_size=256, overlap=10)
+    # if os.path.exists(opt.mask_root.random_sqaure_mask):
+    #     mask_generator = MaskGenerator(fine_size=256, overlap=10)
         
-        for root, _, files in os.walk(opt.data_root):
-            for file in files:
-                mask, _, _ = mask_generator.create_rand_mask()  # Generate the mask
-                mask_path = os.path.join(opt.mask_root.random_sqaure_mask, file)  
-                mask_generator.save_image(mask, mask_path)  
+    #     for root, _, files in os.walk(opt.data_root):
+    #         for file in files:
+    #             mask, _, _ = mask_generator.create_rand_mask()  # Generate the mask
+    #             mask_path = os.path.join(opt.mask_root.random_sqaure_mask, file)  
+    #             mask_generator.save_image(mask, mask_path)  
 
-    if os.path.exists(opt.mask_root.random_walk_mask):
-        mask_generator = MaskGenerator(fine_size=256, overlap=10)
+    # if os.path.exists(opt.mask_root.random_walk_mask):
+    #     mask_generator = MaskGenerator(fine_size=256, overlap=10)
         
-        for _, _, files in os.walk(opt.data_root):
-            for file in files:
-                mask = mask_generator.create_random_walk_mask()
-                mask_path = os.path.join(opt.mask_root.random_walk_mask, file)  
-                mask_generator.save_image(mask, mask_path)  
+    #     for _, _, files in os.walk(opt.data_root):
+    #         for file in files:
+    #             mask = mask_generator.create_random_walk_mask()
+    #             mask_path = os.path.join(opt.mask_root.random_walk_mask, file)  
+    #             mask_generator.save_image(mask, mask_path)  
 
     if os.path.exists(opt.data_root):
 
         dataset = MyDataset(opt)
 
         total_train_images = len(dataset)
-        print(total_train_images)
+        logger.info(f"Total size: {total_train_images}")
 
-        train_size = int(0.7 * total_train_images)  # 70% for training
+        train_size = int(0.3 * total_train_images)  # 70% for training
         val_size = int(0.15 * total_train_images)  # 15% for validation
         test_size = total_train_images - train_size - val_size  # Remaining 15% for testing
 
         train_subset, val_subset, test_subset = random_split(dataset, [train_size, val_size, test_size])
 
-        dataloader_train = DataLoader(train_subset, batch_size=opt.batch_size, shuffle=True, num_workers=opt.num_workers)
-        dataloader_val = DataLoader(val_subset, batch_size=opt.batch_size, shuffle=False, num_workers=opt.num_workers)
-        dataloader_test = DataLoader(test_subset, batch_size=opt.batch_size, shuffle=False, num_workers=opt.num_workers)
+        dataloader_train = DataLoader(train_subset, batch_size=opt.batch_size, shuffle=True, num_workers=opt.num_workers, pin_memory=True)
+        dataloader_val = DataLoader(val_subset, batch_size=opt.batch_size, shuffle=False, num_workers=opt.num_workers, pin_memory=True)
+        dataloader_test = DataLoader(test_subset, batch_size=opt.batch_size, shuffle=False, num_workers=opt.num_workers, pin_memory=True)
 
         return dataloader_train, dataloader_val, dataloader_test, opt
     else:
